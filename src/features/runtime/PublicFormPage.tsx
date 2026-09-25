@@ -28,13 +28,16 @@ export default function PublicFormPage() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_public_form", { p_slug: slug });
       if (error) throw error;
-      if (!data) throw new Error("not_found");
-      return data as PublicForm;
+      // RPC returns table(...) → array. Empty = not found / not published.
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row || !row.published_schema) throw new Error("not_found");
+      return row as PublicForm;
     },
   });
 
   if (isLoading) return <div className="min-h-screen bg-bg" />;
   if (error || !form) return <ClosedOrMissingPage kind="notfound" />;
+  if (!form.published_schema) return <ClosedOrMissingPage kind="notfound" />;
 
   const settings = form.settings ?? {};
   const limitReached = settings.responseLimit != null && settings.responseLimit <= 0;
