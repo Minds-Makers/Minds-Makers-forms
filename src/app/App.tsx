@@ -10,6 +10,7 @@ import AnalyticsPage from "@/features/analytics/AnalyticsPage";
 import LeadsPage from "@/features/leads/LeadsPage";
 import SettingsPage from "@/features/settings/SettingsPage";
 import PublicFormPage from "@/features/runtime/PublicFormPage";
+import SignUpPage from "@/features/auth/SignUpPage";
 
 export default function App() {
   return (
