@@ -1,8 +1,5 @@
 import { FormEvent, useState } from "react";
-<Link to="/admin/signup" className="text-faint text-sm hover:text-muted text-left">
-  Create an account
-</Link>
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -78,6 +75,9 @@ export default function LoginPage() {
           >
             Forgot password?
           </button>
+          <Link to="/admin/signup" className="text-faint text-sm hover:text-muted text-left">
+            Need an account? Sign up
+          </Link>
         </form>
       </Card>
     </div>
