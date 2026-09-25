@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #060b16;
+  --card: #0b1424;
+  --field: #070d19;
+  --line: #16233a;
+  --line-2: #22334f;
+  --ink: #e8eef9;
+  --muted: #8394b0;
+  --faint: #5f7192;
+  --cyan: #2cc8f6;
+  --cyan-ink: #03131c;
+  --cyan-soft: rgba(44, 200, 246, 0.1);
+  --err: #ff8a7a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", sans-serif;
+}
+h1, h2, h3, h4 { font-family: "Space Grotesk", sans-serif; letter-spacing: -0.02em; }
+.mono-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; color: #111; }
+}
