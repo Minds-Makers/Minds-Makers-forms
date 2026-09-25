@@ -13,10 +13,10 @@ interface PublicForm {
   slug: string;
   published_schema: FormSchemaJson;
   version: number;
-  settings: FormSettings;
+  settings: FormSettings | null;
 }
 
-const MIN_COMPLETE_SECONDS = 3; // anti-spam: reject submissions faster than a human could plausibly finish
+const MIN_COMPLETE_SECONDS = 3;
 
 export default function PublicFormPage() {
   const { slug } = useParams();
@@ -36,9 +36,9 @@ export default function PublicFormPage() {
   if (isLoading) return <div className="min-h-screen bg-bg" />;
   if (error || !form) return <ClosedOrMissingPage kind="notfound" />;
 
-  const limitReached =
-    form.settings.responseLimit != null && form.settings.responseLimit <= 0; // exact check done server-side too
-  const closedByDate = form.settings.closeDate ? new Date(form.settings.closeDate) < new Date() : false;
+  const settings = form.settings ?? {};
+  const limitReached = settings.responseLimit != null && settings.responseLimit <= 0;
+  const closedByDate = settings.closeDate ? new Date(settings.closeDate) < new Date() : false;
 
   if (closedByDate || limitReached) return <ClosedOrMissingPage kind="closed" />;
 
@@ -64,6 +64,7 @@ type Stage = "intro" | "step" | "success";
 
 function FormRuntime({ form, source }: { form: PublicForm; source: string }) {
   const schema = form.published_schema;
+  const settings = form.settings ?? {};
   const draftKey = `mm_draft_${form.id}_${form.version}`;
   const submittedKey = `mm_submitted_${form.id}`;
 
@@ -71,16 +72,14 @@ function FormRuntime({ form, source }: { form: PublicForm; source: string }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // FIX: consentRequired is now optional (undefined = treat as required).
   const [consented, setConsented] = useState(!(schema.intro.consentRequired ?? true));
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
 
-  const alreadySubmitted = form.settings.onePerDevice && localStorage.getItem(submittedKey) === "1";
+  const alreadySubmitted = settings.onePerDevice && localStorage.getItem(submittedKey) === "1";
 
-  // Restore draft.
   useEffect(() => {
     const raw = localStorage.getItem(draftKey);
     if (raw) {
@@ -93,12 +92,10 @@ function FormRuntime({ form, source }: { form: PublicForm; source: string }) {
     }
   }, [draftKey]);
 
-  // Persist draft.
   useEffect(() => {
     if (stage !== "success") localStorage.setItem(draftKey, JSON.stringify({ answers }));
   }, [answers, draftKey, stage]);
 
-  // Log a "view" event once.
   useEffect(() => {
     supabase.rpc("log_form_event", { p_form_id: form.id, p_kind: "view" }).then(
       () => {},
@@ -148,23 +145,22 @@ function FormRuntime({ form, source }: { form: PublicForm; source: string }) {
   }
 
   async function submit() {
-    if (honeypot) return; // silently drop bots, no visible error
+    if (honeypot) return;
     const durationSec = startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0;
     if (durationSec < MIN_COMPLETE_SECONDS) {
-      // Likely automated; show a friendly message rather than blocking silently.
       setSubmitError("That was fast — please double check your answers and submit again.");
       return;
     }
     setSubmitting(true);
     setSubmitError(null);
 
-    // Flatten scales-group answers into their per-item keys for storage.
     const flatAnswers: Record<string, unknown> = {};
     for (const step of schema.steps) {
       for (const q of step.questions) {
         if (q.type === "scales") {
           const grouped = (answers[q.id] as Record<string, number>) ?? {};
-          for (const item of q.items) if (grouped[item.id] !== undefined) flatAnswers[item.id] = grouped[item.id];
+          for (const item of q.items)
+            if (grouped[item.id] !== undefined) flatAnswers[item.id] = grouped[item.id];
         } else if (answers[q.id] !== undefined) {
           flatAnswers[q.id] = answers[q.id];
         }
@@ -183,11 +179,13 @@ function FormRuntime({ form, source }: { form: PublicForm; source: string }) {
 
     setSubmitting(false);
     if (error) {
-      setSubmitError("Couldn't submit — check your connection and try again. Your answers are still here.");
+      setSubmitError(
+        "Couldn't submit — check your connection and try again. Your answers are still here."
+      );
       return;
     }
     localStorage.removeItem(draftKey);
-    if (form.settings.onePerDevice) localStorage.setItem(submittedKey, "1");
+    if (settings.onePerDevice) localStorage.setItem(submittedKey, "1");
     setStage("success");
   }
 
@@ -232,7 +230,7 @@ function FormRuntime({ form, source }: { form: PublicForm; source: string }) {
           />
         )}
 
-        {stage === "success" && <SuccessScreen settings={form.settings} slug={form.slug} />}
+        {stage === "success" && <SuccessScreen settings={settings} slug={form.slug} />}
       </div>
 
       {stage === "step" && (
@@ -266,7 +264,6 @@ function IntroScreen({
   const parts = schema.intro.headlineHighlight
     ? schema.intro.headline.split(schema.intro.headlineHighlight)
     : [schema.intro.headline];
-  // FIX: consentRequired is optional; undefined means "required".
   const needsConsent = schema.intro.consentRequired ?? true;
   return (
     <div>
@@ -337,7 +334,6 @@ function StepScreen({
             </div>
           ))}
       </div>
-      {/* Honeypot: hidden from real users, bots often fill every field. */}
       <input
         type="text"
         name="company_website"
