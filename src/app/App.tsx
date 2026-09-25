@@ -18,6 +18,7 @@ export default function App() {
       <Route path="/" element={<Navigate to="/admin" replace />} />
 
       <Route path="/admin/login" element={<LoginPage />} />
+      <Route path="/admin/signup" element={<SignUpPage />} />
 
       <Route element={<RouteGuard />}>
         <Route element={<Layout />}>
