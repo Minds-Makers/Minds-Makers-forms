@@ -65,8 +65,59 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      <InviteAdminCard />
+
       <DangerZone />
     </div>
+  );
+}
+
+function InviteAdminCard() {
+  const [code, setCode] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function generate() {
+    setBusy(true);
+    setError(null);
+    setCopied(false);
+    const { data, error } = await supabase.rpc("generate_invite_code");
+    setBusy(false);
+    if (error) setError(error.message);
+    else setCode(data as string);
+  }
+
+  function copy() {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+  }
+
+  return (
+    <Card className="p-6">
+      <h2 className="font-head font-bold mb-2">Invite an admin</h2>
+      <p className="text-faint text-sm mb-4">
+        Generates a single-use code. Send it to them along with the sign-up link — they enter
+        it once, along with their own email and password.
+      </p>
+      <div className="flex flex-col gap-3">
+        <Button onClick={generate} disabled={busy} className="self-start">
+          {busy ? "Generating…" : "Generate invite code"}
+        </Button>
+        {error && <p className="text-err text-sm">{error}</p>}
+        {code && (
+          <div className="flex items-center gap-2">
+            <code className="bg-field border border-line2 rounded-sm px-3 py-2 text-sm flex-1 break-all">
+              {code}
+            </code>
+            <Button variant="ghost" onClick={copy}>
+              {copied ? "Copied" : "Copy"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 
