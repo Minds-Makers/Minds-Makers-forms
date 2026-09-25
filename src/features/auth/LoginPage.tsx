@@ -1,4 +1,7 @@
 import { FormEvent, useState } from "react";
+<Link to="/admin/signup" className="text-faint text-sm hover:text-muted text-left">
+  Create an account
+</Link>
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/Card";
